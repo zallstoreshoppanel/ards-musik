@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Ards Music — YouTube</title>
+  <meta name="theme-color" content="#121212"/>
+  <style>
+    :root{
+      --bg:#121212; --bg-soft:#181818; --bg-side:#0c0c0c; --border:#242424;
+      --text:#fff; --muted:#b3b3b3; --brand:#1DB954; --chip:#2a2a2a; --shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:var(--text);background:var(--bg)}
+    .container{max-width:1100px;margin:0 auto;padding:0 16px}
+
+    /* Sidebar / Drawer */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:280px; background:var(--bg-side);
+      border-right:1px solid var(--border); padding:20px; display:flex; flex-direction:column; gap:14px; z-index:30; transition:transform .2s ease;
+    }
+    .brand{color:var(--brand);font-weight:800;font-size:22px}
+    .nav ul{list-style:none;margin:0;padding:0}
+    .nav li{padding:8px 0;color:#dcdcdc;font-size:14px;cursor:pointer}
+    .nav li:hover{color:#fff}
+    .side-title{font-size:11px;color:#8a8a8a;text-transform:uppercase;margin-top:10px}
+    .playlist{flex:1;overflow:auto;border-top:1px solid var(--border);padding-top:10px}
+    .playlist li{display:flex;justify-content:space-between;gap:6px;color:#d7d7d7;font-size:14px;padding:8px 0;cursor:pointer}
+    .playlist li:hover{color:#fff}
+    .chip{background:var(--chip);border-radius:999px;padding:2px 8px;font-size:10px;color:#bbb}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25;display:none}
+    .overlay.show{display:block}
+
+    /* Main */
+    .main{margin-left:280px;padding:16px 0 108px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin:14px 0;gap:10px}
+    .left{display:flex;align-items:center;gap:10px}
+    .burger{display:none;border:1px solid var(--border);background:#1b1b1b;color:#fff;border-radius:10px;padding:10px 12px;cursor:pointer}
+    .input{background:#1e1e1e;border:1px solid var(--border);color:#fff;border-radius:10px;padding:12px 14px;min-width:220px}
+    .btn{background:var(--brand);color:#000;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+    .btn.secondary{background:#1e1e1e;color:#fff;border:1px solid var(--border);box-shadow:none}
+    .panel{background:var(--bg-soft);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+    .section-title{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
+    .muted{color:var(--muted)}
+
+    /* Cards (stabil) */
+    .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+    .card{background:#181818;border:1px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+    .thumb-wrap{position:relative}
+    .thumb{width:100%;aspect-ratio:1/1;border-radius:10px;object-fit:cover;background:#555;display:block}
+    .play-btn{position:absolute;right:8px;bottom:8px;width:44px;height:44px;border-radius:50%;border:0;background:#000c;backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .title{font-size:13px;font-weight:700;line-height:1.25}
+    .subtitle{font-size:12px;color:#a8a8a8}
+    .actions{display:flex;gap:8px;margin-top:auto}
+    .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:#1f1f1f;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+    .icon-btn:hover{background:#262626}
+
+    /* Queue */
+    .queue{max-height:430px;overflow:auto}
+    .queue-item{padding:10px 12px;border-radius:12px;font-size:14px;color:#ddd;cursor:pointer}
+    .queue-item:hover{background:#222}
+    .queue-item.active{background:#262626}
+
+    /* Player */
+    .player{position:fixed;left:280px;right:0;bottom:0;background:#181818;border-top:1px solid var(--border);z-index:20}
+    .player-inner{display:flex;align-items:center;gap:16px;padding:12px 16px}
+    .cover{width:60px;height:60px;border-radius:10px;background:#555}
+    .meta .name{font-size:14px;font-weight:800}
+    .meta .artist{font-size:12px;color:#aaa}
+    .controls{flex:1}
+    .controls .row{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
+    .round{width:48px;height:48px;border-radius:50%;background:#fff;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .skip{border:1px solid var(--border);background:#1e1e1e;color:#fff;border-radius:12px;padding:10px 12px}
+    .progress{display:flex;align-items:center;gap:10px}
+    .time{width:44px;text-align:center;font-size:12px;color:#aaa}
+    input[type="range"]{width:100%}
+
+    /* Toast & Modal */
+    .toast-wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:50}
+    .toast{background:#222;border:1px solid var(--border);padding:10px 14px;border-radius:12px;color:#fff;margin-top:8px;box-shadow:var(--shadow);font-size:13px}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:45}
+    .modal.show{display:flex}
+    .modal .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+    .modal .dialog{position:relative;background:#1b1b1b;border:1px solid var(--border);border-radius:16px;padding:16px;min-width:320px;max-width:92%;box-shadow:var(--shadow)}
+    .modal .dialog h4{margin:0 0 8px 0}
+    .modal input{width:100%;background:#222;border:1px solid var(--border);color:#fff;border-radius:10px;padding:10px 12px;margin-top:8px}
+    .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .sidebar{transform:translateX(-100%)}
+      .sidebar.open{transform:translateX(0)}
+      .burger{display:inline-flex}
+      .main{margin-left:0}
+      .player{left:0}
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay" class="overlay" onclick="toggleSidebar(false)"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">Ards Music</div>
+    <nav class="nav">
+      <ul>
+        <li onclick="goHome()">Home</li>
+        <li onclick="focusSearch()">Search</li>
+        <li onclick="openLibrary()">Your Library</li>
+      </ul>
+    </nav>
+    <div class="side-title">Playlists</div>
+    <ul id="plist" class="playlist"></ul>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="container">
+      <div class="topbar">
+        <div class="left">
+          <button class="burger" onclick="toggleSidebar(true)"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+          <h1 style="margin:0;font-size:20px;font-weight:800">Good evening</h1>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button id="btnNewPl" class="btn secondary"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg>&nbsp;New Playlist</button>
+          <input id="q" class="input" placeholder="Cari lagu / artis…"/>
+          <button id="btnSearch" class="btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#000"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5L20.5 19l-5-5zM4 9.5C4 6.46 6.46 4 9.5 4S15 6.46 15 9.5 12.54 15 9.5 15 4 12.54 4 9.5z"/></svg></button>
+        </div>
+      </div>
+
+      <section>
+        <div class="section-title"><h2 style="margin:0;font-size:18px">Trending di Indonesia</h2></div>
+        <div id="trendGrid" class="grid-cards"></div>
+      </section>
+
+      <section style="margin-top:18px">
+        <div class="section-title">
+          <h2 id="searchTitle" style="margin:0;font-size:18px">Search results</h2>
+          <div id="searchCount" class="muted"></div>
+        </div>
+        <div id="searchSection" class="panel">
+          <div id="searchGrid" class="grid-cards"></div>
+          <div id="searchEmpty" class="muted">Belum ada hasil. Coba “lofi” atau “phonk”.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Player -->
+  <div class="player">
+    <div class="player-inner container">
+      <div style="display:flex;align-items:center;gap:12px;min-width:220px">
+        <div id="cover" class="cover"></div>
+        <div class="meta">
+          <div id="tname" class="name">Tidak ada track</div>
+          <div id="tartist" class="artist"></div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="row">
+          <button id="btnBack" class="skip"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M6 6h2v12H6zm2.5 6l9 6V6l-9 6z"/></svg></button>
+          <button id="btnPlay" class="round"><span id="iconPlay"><svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg></span></button>
+          <button id="btnFwd" class="skip"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M16 6h2v12h-2zM15.5 12l-9 6V6l9 6z"/></svg></button>
+        </div>
+        <div class="progress">
+          <div id="cur" class="time">0:00</div>
+          <input id="seek" type="range" min="0" max="100" value="0"/>
+          <div id="dur" class="time">0:00</div>
+        </div>
+      </div>
+      <div class="muted" style="min-width:140px;text-align:right">Volume (atur via sistem)</div>
+    </div>
+  </div>
+
+  <!-- Hidden YouTube iframe -->
+  <div style="width:0;height:0;overflow:hidden"><div id="yt-player"></div></div>
+
+  <!-- Toast & Modal -->
+  <div id="toasts" class="toast-wrap"></div>
+  <div id="modal" class="modal">
+    <div class="backdrop" onclick="closeModal()"></div>
+    <div class="dialog">
+      <h4>Tambahkan ke Playlist</h4>
+      <div id="modalPlaylists"></div>
+      <input id="modalNewName" placeholder="atau buat playlist baru"/>
+      <div class="actions">
+        <button class="btn secondary" onclick="closeModal()">Batal</button>
+        <button class="btn" onclick="confirmAdd()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ====== CONFIG (pakai key kamu) ====== */
+    const API_KEY = "AIzaSyBnWUujaOpbEd2BveLvUMWEglcbxs-TLFc";
+    const REGION = "ID";
+    const MUSIC_CATEGORY_ID = "10";
+
+    /* ====== Drawer ====== */
+    const sidebar=document.getElementById('sidebar'), overlay=document.getElementById('overlay');
+    function toggleSidebar(open=true){ if(open){sidebar.classList.add('open');overlay.classList.add('show');} else {sidebar.classList.remove('open');overlay.classList.remove('show');}}
+    function goHome(){ window.scrollTo({top:0,behavior:'smooth'}); toggleSidebar(false); }
+    function focusSearch(){ document.getElementById('q').focus(); toggleSidebar(false); }
+    function openLibrary(){ document.getElementById('plist').scrollIntoView({behavior:'smooth'}); }
+
+    /* ====== Toast ====== */
+    const toasts=document.getElementById('toasts');
+    function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; toasts.appendChild(t); setTimeout(()=>t.remove(),2600); }
+
+    /* ====== Modal ====== */
+    const modal=document.getElementById('modal'), modalPlaylists=document.getElementById('modalPlaylists'), modalNewName=document.getElementById('modalNewName');
+    let modalItem=null, modalChoice=null;
+    function openModal(item){
+      modalItem=item; modalChoice=null; modalNewName.value='';
+      modalPlaylists.innerHTML='';
+      const names=Object.keys(state.playlists);
+      if(!names.length){ const p=document.createElement('div'); p.className='muted'; p.textContent='Belum ada playlist.'; modalPlaylists.appendChild(p); }
+      names.forEach(name=>{
+        const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.padding='8px 0';
+        const left=document.createElement('div'); left.textContent=name;
+        const pick=document.createElement('button'); pick.className='btn secondary'; pick.textContent='Pilih';
+        pick.onclick=()=>{ modalChoice=name; toast('Dipilih: '+name); };
+        row.append(left,pick); modalPlaylists.appendChild(row);
+      });
+      modal.classList.add('show');
+    }
+    function closeModal(){ modal.classList.remove('show'); modalItem=null; modalChoice=null; }
+    function confirmAdd(){
+      const name=modalChoice || modalNewName.value.trim();
+      if(!name){ toast('Pilih/ketik nama playlist'); return; }
+      if(!state.playlists[name]) state.playlists[name]=[];
+      if(!state.playlists[name].some(x=>x.id===modalItem.id)) state.playlists[name].unshift(modalItem);
+      saveState(); renderPlaylists(); toast('Ditambahkan ke '+name); closeModal();
+    }
+
+    /* ====== State & Storage ====== */
+    const state={
+      trending:[], results:[], queue:[], current:null,
+      player:null, pollId:null,
+      playlists: loadJSON('ards_playlists',{}),
+      liked: loadJSON('ards_liked',[])
+    };
+    function loadJSON(k,def){ try{return JSON.parse(localStorage.getItem(k))??def;}catch{return def;} }
+    function saveJSON(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+    function saveState(){ saveJSON('ards_playlists',state.playlists); saveJSON('ards_liked',state.liked); }
+
+    /* ====== DOM refs ====== */
+    const el=id=>document.getElementById(id);
+    const trendGrid=el('trendGrid'), searchGrid=el('searchGrid'), searchEmpty=el('searchEmpty'), searchCount=el('searchCount'), searchSection=el('searchSection');
+    const tname=el('tname'), tartist=el('tartist'), cover=el('cover'), cur=el('cur'), dur=el('dur'), seek=el('seek');
+    const btnPlay=el('btnPlay'), btnBack=el('btnBack'), btnFwd=el('btnFwd'), inputQ=el('q'), btnSearch=el('btnSearch'), btnNewPl=el('btnNewPl'), plist=el('plist'), iconPlay=el('iconPlay');
+    const queueEl=el('queue');
+
+    /* ====== Helpers ====== */
+    const fmt=s=>{s=Math.max(0,Math.floor(s||0));const m=Math.floor(s/60),ss=String(s%60).padStart(2,'0');return `${m}:${ss}`;}
+    function makeIcon(path,fill="#fff",size=20){ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width',size); svg.setAttribute('height',size); svg.setAttribute('viewBox','0 0 24 24'); const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',path); p.setAttribute('fill',fill); svg.appendChild(p); return svg; }
+    function isLiked(it){ return state.liked.some(x=>x.id===it.id); }
+
+    /* ====== Render ====== */
+    function renderPlaylists(){
+      plist.innerHTML="";
+      const liked=document.createElement('li'); liked.textContent='Liked Songs';
+      const chip=document.createElement('span'); chip.className='chip'; chip.textContent=state.liked.length;
+      liked.appendChild(chip); liked.onclick=()=>showPlaylist('__LIKED__'); plist.appendChild(liked);
+      Object.keys(state.playlists).forEach(name=>{
+        const li=document.createElement('li'); li.textContent=name;
+        const c=document.createElement('span'); c.className='chip'; c.textContent=state.playlists[name].length;
+        li.appendChild(c); li.onclick=()=>showPlaylist(name); plist.appendChild(li);
+      });
+    }
+    function card(item){
+      const c=document.createElement('div'); c.className='card';
+      const wrap=document.createElement('div'); wrap.className='thumb-wrap';
+      const img=document.createElement('img'); img.className='thumb'; img.src=item.thumbnail; img.alt='thumb';
+      const play=document.createElement('button'); play.className='play-btn'; play.appendChild(makeIcon("M8 5v14l11-7z","#fff",20));
+      play.onclick=(e)=>{e.stopPropagation(); playItem(item);};
+      wrap.append(img,play);
+      const ti=document.createElement('div'); ti.className='title'; ti.textContent=item.title;
+      const ar=document.createElement('div'); ar.className='subtitle'; ar.textContent=item.channel||'';
+      const actions=document.createElement('div'); actions.className='actions';
+      const like=document.createElement('button'); like.className='icon-btn'; like.title='Like';
+      like.appendChild(makeIcon(isLiked(item) ? "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.53C11.59 5.01 13.26 4 15 4 17.5 4 19.5 6 19.5 8.5c0 3.78-3.4 6.86-8.05 11.54L12 21.35z"
+                                        : "M16.5,3c-1.74,0-3.41,1.01-4.22,2.53C11.47,4.01,9.8,3,8.06,3C5.57,3,3.56,5,3.56,7.5c0,3.78,3.4,6.86,8.05,11.54l.39.36.39-.36c4.65-4.68,8.05-7.76,8.05-11.54C20.44,5,18.43,3,15.94,3c-1.74,0-3.41,1.01-4.22,2.53C11.47,4.01,9.8,3,8.06,3z","#fff",20));
+      like.onclick=(e)=>{ e.stopPropagation(); toggleLike(item,like); };
+      const add=document.createElement('button'); add.className='icon-btn'; add.title='Add to Playlist';
+      add.appendChild(makeIcon("M19 13H5v-2h14v2zM12 19H10v-4H6v-2h4V9h2v4h4v2h-4v4z","#fff",20));
+      add.onclick=(e)=>{ e.stopPropagation(); openModal(item); };
+      actions.append(like,add);
+      c.append(wrap,ti,ar,actions);
+      c.onclick=()=>playItem(item);
+      return c;
+    }
+    function renderTrending(){ trendGrid.innerHTML=""; state.trending.forEach(i=>trendGrid.appendChild(card(i))); }
+    function renderSearch(){
+      searchGrid.innerHTML="";
+      if(!state.results.length){ searchEmpty.style.display='block'; searchCount.textContent=''; }
+      else{
+        state.results.forEach(i=>searchGrid.appendChild(card(i)));
+        searchEmpty.style.display='none'; searchCount.textContent=`${state.results.length} hasil`;
+        searchSection.scrollIntoView({behavior:'smooth'});
+      }
+    }
+    function renderQueue(){
+      queueEl.innerHTML="";
+      state.queue.forEach(it=>{
+        const li=document.createElement('div'); li.className='queue-item'+(state.current && state.current.id===it.id?' active':'');
+        li.textContent=it.title; li.onclick=()=>playItem(it); queueEl.appendChild(li);
+      });
+    }
+    function renderCurrent(){
+      tname.textContent=state.current?state.current.title:'Tidak ada track';
+      tartist.textContent=state.current?(state.current.channel||''):'';
+      cover.style.background = state.current?.thumbnail ? `center/cover url("${state.current.thumbnail}")` : '#555';
+    }
+    function showPlaylist(name){
+      toggleSidebar(false);
+      const list = name==='__LIKED__' ? state.liked : (state.playlists[name]||[]);
+      el('searchTitle').textContent = name==='__LIKED__' ? 'Liked Songs' : `Playlist: ${name}`;
+      state.results = list.slice(); renderSearch();
+    }
+    function toggleLike(item,btn){
+      const i=state.liked.findIndex(x=>x.id===item.id);
+      if(i>=0){ state.liked.splice(i,1); toast('Removed from Liked'); }
+      else{ state.liked.unshift(item); toast('Added to Liked'); }
+      saveState(); renderPlaylists();
+      if(btn){ btn.innerHTML=""; btn.appendChild(makeIcon(isLiked(item) ? "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.22 2.53C11.59 5.01 13.26 4 15 4 17.5 4 19.5 6 19.5 8.5c0 3.78-3.4 6.86-8.05 11.54L12 21.35z"
+        : "M16.5,3c-1.74,0-3.41,1.01-4.22,2.53C11.47,4.01,9.8,3,8.06,3C5.57,3,3.56,5,3.56,7.5c0,3.78,3.4,6.86,8.05,11.54l.39.36.39-.36c4.65-4.68,8.05-7.76,8.05-11.54C20.44,5,18.43,3,15.94,3c-1.74,0-3.41,1.01-4.22,2.53C11.47,4.01,9.8,3,8.06,3z","#fff",20)); }
+    }
+
+    /* ====== YouTube Data API ====== */
+    async function ytTrending(){
+      const url=new URL("https://www.googleapis.com/youtube/v3/videos");
+      url.search=new URLSearchParams({part:"snippet,contentDetails,statistics",chart:"mostPopular",regionCode:REGION,maxResults:"24",videoCategoryId:MUSIC_CATEGORY_ID,key:API_KEY}).toString();
+      const res=await fetch(url); if(!res.ok) throw new Error("YouTube API (trending): "+res.statusText);
+      const data=await res.json();
+      return data.items.map(it=>({id:it.id,title:it.snippet.title,channel:it.snippet.channelTitle,thumbnail:it.snippet.thumbnails?.high?.url||it.snippet.thumbnails?.default?.url||""}));
+    }
+    async function ytSearch(q){
+      const url=new URL("https://www.googleapis.com/youtube/v3/search");
+      url.search=new URLSearchParams({part:"snippet",type:"video",maxResults:"30",q,key:API_KEY}).toString();
+      const res=await fetch(url); if(!res.ok) throw new Error("YouTube API (search): "+res.statusText);
+      const data=await res.json();
+      return data.items.map(it=>({id:it.id.videoId,title:it.snippet.title,channel:it.snippet.channelTitle,thumbnail:it.snippet.thumbnails?.high?.url||it.snippet.thumbnails?.default?.url||""}));
+    }
+
+    /* ====== IFrame Player ====== */
+    function loadYT(){ return new Promise(res=>{ if(window.YT&&window.YT.Player){res();return;} const s=document.createElement('script'); s.src="https://www.youtube.com/iframe_api"; document.body.appendChild(s); window.onYouTubeIframeAPIReady=()=>res(); }); }
+    function waitReady(){ return new Promise((res,rej)=>{ let i=0; const id=setInterval(()=>{ i++; if(state.player && typeof state.player.getPlayerState==='function'){clearInterval(id);res();} if(i>40){clearInterval(id);rej(new Error('Player tidak siap'));}},100); }); }
+    async function initPlayer(){
+      await loadYT();
+      state.player=new YT.Player('yt-player',{height:'0',width:'0',playerVars:{controls:0,disablekb:1,modestbranding:1,rel:0,playsinline:1}});
+      clearInterval(state.pollId);
+      state.pollId=setInterval(()=>{ if(!state.player) return; try{
+        const c=Math.floor(state.player.getCurrentTime()||0), d=Math.floor(state.player.getDuration()||0)||0;
+        cur.textContent=fmt(c); dur.textContent=fmt(d); seek.value=d?Math.round((c/d)*100):0;
+        const playing = state.player.getPlayerState && state.player.getPlayerState()===YT.PlayerState.PLAYING;
+        iconPlay.innerHTML=""; iconPlay.appendChild(makeIcon(playing?"M6 5h4v14H6zM14 5h4v14h-4z":"M8 5v14l11-7z","#000",22));
+      }catch{} },500);
+    }
+    async function playItem(item){
+      await waitReady();
+      state.current=item; renderCurrent();
+      // Harus dipicu gesture user (klik) → aman di mobile
+      state.player.loadVideoById(item.id); state.player.playVideo();
+      if(!state.queue.some(x=>x.id===item.id)) state.queue.unshift(item);
+      renderQueue(); toggleSidebar(false); toast("Memutar: "+(item.title||""));
+    }
+
+    /* ====== Events ====== */
+    btnPlay.onclick=()=>{ if(!state.player) return; const st=state.player.getPlayerState(); if(st===YT.PlayerState.PLAYING) state.player.pauseVideo(); else state.player.playVideo(); };
+    btnBack.onclick=()=>{ if(!state.player) return; const t=Math.max(0,(state.player.getCurrentTime()||0)-10); state.player.seekTo(t,true); };
+    btnFwd.onclick=()=>{ if(!state.player) return; const t=(state.player.getCurrentTime()||0)+10; state.player.seekTo(t,true); };
+    seek.oninput=e=>{ const d=state.player?state.player.getDuration()||0:0; state.player && state.player.seekTo(Math.round((Number(e.target.value)/100)*d),true); };
+    btnSearch.onclick=async()=>{ const q=(inputQ.value||'').trim(); if(!q) return; try{ state.results=await ytSearch(q); renderSearch(); }catch(e){ toast(e.message); } };
+    inputQ.addEventListener('keydown',e=>{ if(e.key==='Enter') btnSearch.click(); });
+    btnNewPl.onclick=()=> openModal({id:'__new__'}); // buat playlist baru cepat
+
+    /* ====== Boot ====== */
+    (async function(){
+      renderPlaylists();
+      try{
+        await initPlayer();
+        state.trending = await ytTrending();
+        renderTrending();
+        // Tidak autoplay (harus klik user)
+      }catch(e){ toast(e.message); }
+    })();
+  </script>
+</body>
+</html>
